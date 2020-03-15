@@ -3,7 +3,6 @@ var cors = require('cors')
 var app = express()
 var fs = require('fs');
 const connection = require('./connection');
-const port = 3000 || process.env.PORT;
 var Game = require('./GameSchema');
 var bodyParser = require('body-parser')
 const request = require('request');
@@ -106,5 +105,7 @@ app.get('/scrape', function (req, res) {
     
 })
 
-
-app.listen(port, () => console.log(`Example app listening on port ${port}!`))
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Our app is running on port ${ PORT }`);
+});
