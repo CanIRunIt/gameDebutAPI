@@ -18,94 +18,104 @@ let i = 1;
 var urlencodedParser = bodyParser.urlencoded({ extended: false })
 
 app.get('/', function (req, res) {
-  res.send('Hello World!')
+    res.send('Hello World!')
 })
 
 
 app.get('/results', function (req, res) {
     Game.find({}, function (err, docs) {
-        if(docs) res.status(200).send(docs)
+        if (docs) res.status(200).send(docs)
         else console.log(err)
     });
 })
 
 
 app.get('/scrape', function (req, res) {
-      request('https://www.game-debate.com/games/index.php',(error,
-          response,html)=>{
-              var result=[];
-              if(!error && response.statusCode == 200){
-                  const $ = cheerio.load(html);
-                  const gameList = $('.srRowFull');
-                  //console.log(gameList.text())
-                  const output = gameList.find('a').text();
-                  //console.log(output)
-      
-                  $('.srRowFull').each((i,el)=>{
-                      const item = $(el).find('a').attr('href');
-                      const title = $(el).find('a').attr('name');
-                      if(item==undefined){
-                          //console.log(item.substr(2,))
-                      }else{
-                          //console.log(item.substr(18,));
-                          getSystemReq(item.substr(18,),title);
-                      }
-                  })
-                  
-              }
-              
-          }
-          )
-      
-       function getSystemReq(_url,title) {
-           
-          request('https://www.game-debate.com/games/index.php'+_url,(err,
-          res,html)=>{
-              if(!err && res.statusCode == 200){
-                  const $ = cheerio.load(html);
-                  const gameList = $('.game-page-top-grid');
-                 
-                  var json = { title : "", OS : "", Processor : "",Memory : "",Graphics : "",Storage:""};
-      
-               
-      
-                  
-                   $('.devDefSysReqMinWrapper').find('li').each((i,el)=>{
-                      json['title']=title
-                      if($(el).text().substr(0,2)=="OS"){
-                          json['OS']=$(el).text().substr(4,)
-                      }else if($(el).text().substr(0,9)=="Processor"){
-                          json['Processor']=$(el).text().substr(11,)
-                      }else if($(el).text().substr(0,6)=="Memory"){
-                          json['Memory']=$(el).text().substr(8,)
-                      }else if($(el).text().substr(0,8)=="Graphics"){
-                          json['Graphics']=$(el).text().substr(10,)
-                      }else if($(el).text().substr(0,7)=="Storage"){
-                          json['Storage']=$(el).text().substr(9,)
-                      }
-                  })
-                  console.log(json);
-                  
-                 
-                  
-                  
-                  // documents array
-                  var games = new Game(json);
-              
-                  // save multiple documents to the collection referenced by Book Model
-                  games.save(function (err, docs) {
+    request('https://www.game-debate.com/games/index.php', (error,
+        response, html) => {
+        var result = [];
+        if (!error && response.statusCode == 200) {
+            const $ = cheerio.load(html);
+            const gameList = $('.srRowFull');
+            //console.log(gameList.text())
+            const output = gameList.find('a').text();
+            //console.log(output)
+
+            $('.srRowFull').each((i, el) => {
+                const item = $(el).find('a').attr('href');
+                const title = $(el).find('a').attr('name');
+                if (item == undefined) {
+                    //console.log(item.substr(2,))
+                } else {
+                    //console.log(item.substr(18,));
+                    getSystemReq(item.substr(18), title);
+                }
+            })
+
+        }
+
+    }
+    )
+
+    function getSystemReq(_url, title) {
+
+        request('https://www.game-debate.com/games/index.php' + _url, (err,
+            res, html) => {
+            if (!err && res.statusCode == 200) {
+                const $ = cheerio.load(html);
+                const gameList = $('.game-page-top-grid');
+
+                var json = { title : "", OS : "", Intel_CPU : "",AMD_CPU : "",NVIDIA_Graphics : "",AMD_Graphics:"",VRAM:"",RAM:"",HDD:""};
+
+
+                $('.systemRequirementsWrapBox').find('a').each((i, el) => {
+                    //console.log(i) 
+                    //console.log($(el).text())
+
+                    json['title'] = title
+                    if (i == 5) {
+                        json['Intel_CPU'] = $(el).text()
+                    } else if (i == 6) {
+                        json['AMD_CPU'] = $(el).text()
+                    } else if (i == 9) {
+                        json['NVIDIA_Graphics'] = $(el).text()
+                    } else if (i == 10) {
+                        json['AMD_Graphics'] = $(el).text()
+                    }
+                })
+                $('.systemRequirementsWrapBox').find('span').each((j, el) => {
+                    //console.log(j) 
+                    //console.log($(el).text())
+
+                    if (j == 7) {
+                        json['VRAM'] = $(el).text()
+                    } else if (j == 8) {
+                        json['RAM'] = $(el).text()
+                    } else if (j == 9) {
+                        json['OS'] = $(el).text()
+                    } else if (j == 11) {
+                        json['HDD'] = $(el).text()
+                    }
+                })
+                console.log(json);
+
+                // documents array
+                var games = new Game(json);
+
+                // save multiple documents to the collection referenced by Book Model
+                games.save(function (err, docs) {
                     if (err) return console.error(err);
                     console.log(" saved to bookstore collection.");
-                  });
-                  
-              }
-          }
-          )
-      }
-    
+                });
+
+            }
+        }
+        )
+    }
+
 })
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Our app is running on port ${ PORT }`);
+    console.log(`Our app is running on port ${PORT}`);
 });
