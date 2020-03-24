@@ -4,6 +4,7 @@ var app = express()
 var fs = require('fs');
 const connection = require('./connection');
 var Game = require('./GameSchema');
+var GameDetails = require('./GameDetailsSchema')
 var bodyParser = require('body-parser')
 const request = require('request');
 const cheerio = require('cheerio');
@@ -23,7 +24,7 @@ app.get('/', function (req, res) {
 
 
 app.get('/results', function (req, res) {
-    Game.find({}, function (err, docs) {
+    GameDetails.find({}, function (err, docs) {
         if (docs) res.status(200).send(docs)
         else console.log(err)
     });
@@ -31,7 +32,7 @@ app.get('/results', function (req, res) {
 
 
 app.get('/scrape', function (req, res) {
-    request('https://www.game-debate.com/games/index.php', (error,
+    request('https://www.game-debate.com/games/index.php?year=2019', (error,
         response, html) => {
         var result = [];
         if (!error && response.statusCode == 200) {
@@ -100,12 +101,12 @@ app.get('/scrape', function (req, res) {
                 console.log(json);
 
                 // documents array
-                var games = new Game(json);
+                var games = new GameDetails(json);
 
                 // save multiple documents to the collection referenced by Book Model
                 games.save(function (err, docs) {
                     if (err) return console.error(err);
-                    console.log(" saved to bookstore collection.");
+                    console.log(" saved to gameDetails collection.");
                 });
 
             }
@@ -114,6 +115,27 @@ app.get('/scrape', function (req, res) {
     }
 
 })
+
+/* 
+app.get('/copyData', function (req, res) {
+    Game.find({}, function (err, docs) {
+        if (docs) {
+            //db.GameDetails.createIndex( { "title": 1 }, { unique: true } )
+            //while(docs.length>=0){
+            
+                var gameDetails = new GameDetails(docs[1])
+                gameDetails.save(function (err, docs) {
+                    if (err) return console.error(err);
+                    console.log(" saved to game_Details collection.");
+                }); 
+            //}
+            
+        }
+        else console.log(err)
+    });
+})
+ */
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
