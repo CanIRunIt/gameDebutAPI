@@ -3,8 +3,9 @@ var cors = require('cors')
 var app = express()
 var fs = require('fs');
 const connection = require('./connection');
-var Game = require('./GameSchema');
-var GameDetails = require('./GameDetailsSchema')
+var Game = require('./Schemas/GameSchema');
+var GameDetails = require('./Schemas/GameDetailsSchema')
+var CPUDetails= require('./Schemas/cpuSchema');
 var bodyParser = require('body-parser')
 const request = require('request');
 const cheerio = require('cheerio');
@@ -25,6 +26,13 @@ app.get('/', function (req, res) {
 
 app.get('/results', function (req, res) {
     GameDetails.find({}, function (err, docs) {
+        if (docs) res.status(200).send(docs)
+        else console.log(err)
+    });
+})
+
+app.get('/cpuprices', function (req, res) {
+    CPUDetails.find({}, function (err, docs) {
         if (docs) res.status(200).send(docs)
         else console.log(err)
     });
@@ -136,6 +144,35 @@ app.get('/copyData', function (req, res) {
 })
  */
 
+
+app.get('/cpu', function (req, res) {
+    request('https://www.cpubenchmark.net/low_end_cpus.html', (error,
+        response, html) => {
+        var result = [];
+        if (!error && response.statusCode == 200) {
+            const $ = cheerio.load(html);
+
+            var json = { CPU : "", Price : ""};
+
+            $('.prdname').each((i, el) => {
+                const item = $(el).text();
+                json['CPU']=item
+                const details = $(el).next().next().next().text();
+                json['Price']=details
+
+                var cpus = new CPUDetails(json);
+                cpus.save(function(err,docs){
+                    if (err) return console.error(err);
+                    console.log(" saved to cpuDetails collection.");
+                })
+            })
+
+
+        }
+
+    }
+    )
+})
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
